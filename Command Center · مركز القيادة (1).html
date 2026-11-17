@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Command Center · مركز القيادة</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0d1117;--sf:#151b24;--sf2:#1c2431;--bd:#2a3444;--tx:#e8edf4;--mu:#8b98ab;--ac:#ffb84d;--ac2:#6ea8ff;--ok:#4ade80;--bad:#ff6b6b;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f4f6f9;--sf:#fff;--sf2:#eef1f6;--bd:#d5dbe5;--tx:#141a24;--mu:#5b6779;--ac:#b86a00;--ac2:#1d5fd1;--ok:#13803c;--bad:#c93232;color-scheme:light}}
+:root[data-theme="light"]{--bg:#f4f6f9;--sf:#fff;--sf2:#eef1f6;--bd:#d5dbe5;--tx:#141a24;--mu:#5b6779;--ac:#b86a00;--ac2:#1d5fd1;--ok:#13803c;--bad:#c93232;color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;min-height:100vh}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:10px}
+.inp{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.5rem .75rem;color:var(--tx);min-width:0}
+.inp:focus,button:focus-visible{outline:2px solid var(--ac2);outline-offset:1px}
+.btn{background:var(--ac);color:#111;font-weight:600;border-radius:8px;padding:.5rem 1rem}
+.ghost{border:1px solid var(--bd);border-radius:8px;padding:.35rem .75rem;color:var(--mu)}
+.ghost.on,.nav.on{background:var(--sf2);color:var(--tx);border-color:var(--ac)}
+.nav{padding:.5rem .9rem;border-radius:8px;color:var(--mu);white-space:nowrap;border:1px solid transparent}
+.bar{height:8px;background:var(--sf2);border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--ac2);transition:width .4s}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.chk{width:20px;height:20px;border:2px solid var(--bd);border-radius:6px;flex:none;display:grid;place-items:center;font-size:12px}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#111}
+.mu{color:var(--mu)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="max-w-6xl mx-auto p-4 md:p-6">
+  <header class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div><h1 class="text-xl font-bold" id="title"></h1><p class="mu text-sm" id="date"></p></div>
+    <div class="flex gap-2"><button class="ghost" id="thm"></button><button class="ghost" id="lng"></button></div>
+  </header>
+  <nav id="nav" class="flex gap-1 overflow-x-auto mb-5 pb-1"></nav>
+  <main id="app"></main>
+</div>
+<script>
+const $=s=>document.querySelector(s), uid=()=>Math.random().toString(36).slice(2,9);
+const iso=d=>new Date(d).toISOString().slice(0,10), today=iso(Date.now());
+const T={
+en:{app:'Command Center',dashboard:'Overview',tasks:'Tasks',goals:'Goals',finance:'Finance',habits:'Habits',
+ dev:'Software & startups',personal:'Personal',fitness:'Fitness & gym',ops:'Operations',High:'High',Medium:'Medium',Low:'Low',
+ daily:'Daily',weekly:'Weekly',add:'Add',newTask:'New task…',newGoal:'New goal…',newMs:'Add milestone…',short:'Short-term',long:'Long-term',
+ net:'Net balance',spent:'Expenses this month',earned:'Income this month',income:'Income',expense:'Expense',subs:'Software subscriptions',
+ revenue:'Project revenue',amount:'Amount',note:'Note',nothing:'Nothing here yet — add the first item above.',done:'done',todayTasks:'Today’s tasks',
+ activeGoals:'Active goals',streak:'day streak',newHabit:'New habit…',byCat:'Spending by category',budget:'Monthly budget',left:'left',over:'over',
+ history:'Transactions',del:'Delete',lang:'العربية',light:'Light',dark:'Dark',completion:'Completion',habitsToday:'Habits today',scope:'Scope',cat:'Category'},
+ar:{app:'مركز القيادة',dashboard:'نظرة عامة',tasks:'المهام',goals:'الأهداف',finance:'المالية',habits:'العادات',
+ dev:'البرمجة والشركات الناشئة',personal:'شخصي',fitness:'اللياقة والنادي',ops:'العمليات',High:'عالية',Medium:'متوسطة',Low:'منخفضة',
+ daily:'يومي',weekly:'أسبوعي',add:'إضافة',newTask:'مهمة جديدة…',newGoal:'هدف جديد…',newMs:'أضف مرحلة…',short:'قصير المدى',long:'طويل المدى',
+ net:'الرصيد الصافي',spent:'مصروفات الشهر',earned:'إيرادات الشهر',income:'إيراد',expense:'مصروف',subs:'اشتراكات البرمجيات',
+ revenue:'إيرادات المشاريع',amount:'المبلغ',note:'ملاحظة',nothing:'لا يوجد شيء بعد — أضف أول عنصر من الأعلى.',done:'منجز',todayTasks:'مهام اليوم',
+ activeGoals:'الأهداف النشطة',streak:'يوم متتالي',newHabit:'عادة جديدة…',byCat:'المصروفات حسب الفئة',budget:'الميزانية الشهرية',left:'متبقي',over:'تجاوز',
+ history:'المعاملات',del:'حذف',lang:'English',light:'فاتح',dark:'داكن',completion:'نسبة الإنجاز',habitsToday:'عادات اليوم',scope:'النطاق',cat:'الفئة'}};
+const seed=()=>({lang:'en',theme:'dark',view:'dashboard',budget:1500,
+ tasks:[
+  {id:uid(),t:'Ship auth module PR',a:'إرسال طلب دمج وحدة المصادقة',cat:'dev',pri:'High',scope:'daily',done:false},
+  {id:uid(),t:'Reply to pilot customers',a:'الرد على العملاء التجريبيين',cat:'dev',pri:'Medium',scope:'daily',done:true},
+  {id:uid(),t:'Leg day',a:'تمرين الأرجل',cat:'fitness',pri:'Medium',scope:'daily',done:false},
+  {id:uid(),t:'Renew hosting invoice',a:'تجديد فاتورة الاستضافة',cat:'ops',pri:'High',scope:'weekly',done:false},
+  {id:uid(),t:'Family dinner',a:'عشاء العائلة',cat:'personal',pri:'Low',scope:'weekly',done:false}],
+ goals:[
+  {id:uid(),t:'Launch MVP',a:'إطلاق النسخة الأولى',type:'short',ms:[['Design done','اكتمال التصميم',1],['Backend API','واجهة الخلفية',1],['Beta users','مستخدمو التجربة',0],['Public launch','الإطلاق العام',0]].map(m=>({t:m[0],a:m[1],done:!!m[2]}))},
+  {id:uid(),t:'Reach $5k monthly revenue',a:'الوصول إلى 5 آلاف دولار شهرياً',type:'long',ms:[['First 10 customers','أول 10 عملاء',1],['$1k MRR','1000$ شهرياً',0],['$3k MRR','3000$ شهرياً',0],['$5k MRR','5000$ شهرياً',0]].map(m=>({t:m[0],a:m[1],done:!!m[2]}))}],
+ tx:[{id:uid(),type:'in',amt:2400,cat:'revenue',note:'Client project',date:today},{id:uid(),type:'out',amt:49,cat:'subs',note:'Cloud & tooling',date:today},
+  {id:uid(),type:'out',amt:210,cat:'ops',note:'Hosting & domains',date:today},{id:uid(),type:'out',amt:120,cat:'personal',note:'Gym membership',date:today}],
+ habits:[{id:uid(),t:'Gym workout',a:'تمرين النادي',log:{}},{id:uid(),t:'Deep work (4h)',a:'عمل عميق (4 ساعات)',log:{}},{id:uid(),t:'Read 20 pages',a:'قراءة 20 صفحة',log:{}}]});
+let S; try{S=JSON.parse(localStorage.getItem('cc1'))}catch(e){} if(!S||!S.tasks)S=seed();
+// seed some habit history
+if(!localStorage.getItem('cc1'))S.habits.forEach((h,i)=>{for(let d=1;d<=3+i;d++)h.log[iso(Date.now()-d*864e5)]=1});
+const save=()=>{try{localStorage.setItem('cc1',JSON.stringify(S))}catch(e){}};
+const t=k=>T[S.lang][k]||k, nm=x=>S.lang==='ar'&&x.a?x.a:x.t;
+const money=n=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0});
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const CATS=['dev','personal','fitness','ops'], FC=['subs','revenue','personal','ops'], PRI={High:'var(--bad)',Medium:'var(--ac)',Low:'var(--ac2)'};
+const monthTx=()=>S.tx.filter(x=>x.date.slice(0,7)===today.slice(0,7));
+const sum=(a,ty)=>a.filter(x=>x.type===ty).reduce((s,x)=>s+x.amt,0);
+const streak=h=>{let n=0,d=Date.now();if(!h.log[iso(d)])d-=864e5;while(h.log[iso(d)]){n++;d-=864e5}return n};
+const bar=p=>`<div class="bar" role="progressbar" aria-valuenow="${p}"><i style="width:${p}%"></i></div>`;
+const stat=(l,v,c)=>`<div class="card p-4"><div class="mu text-sm">${l}</div><div class="num text-2xl font-bold mt-1" style="color:${c||'var(--tx)'}">${v}</div></div>`;
+const empty=()=>`<p class="mu p-6 text-center">${t('nothing')}</p>`;
+const opts=(arr,f)=>arr.map(k=>`<option value="${k}">${f?f(k):t(k)}</option>`).join('');
+
+function taskRow(x){return `<div class="flex items-center gap-3 p-3 border-b" style="border-color:var(--bd)">
+ <button class="chk ${x.done?'on':''}" data-a="tog" data-id="${x.id}" aria-label="toggle">${x.done?'✓':''}</button>
+ <div class="flex-1 min-w-0"><div class="${x.done?'line-through mu':''}">${nm(x)}</div><div class="text-xs mu">${t(x.cat)} · ${t(x.scope)}</div></div>
+ <span class="text-xs px-2 py-1 rounded-full" style="border:1px solid ${PRI[x.pri]};color:${PRI[x.pri]}">${t(x.pri)}</span>
+ <button class="mu px-1" data-a="deltask" data-id="${x.id}" aria-label="${t('del')}">✕</button></div>`}
+
+const V={
+dashboard(){
+ const td=S.tasks.filter(x=>x.scope==='daily'),dn=td.filter(x=>x.done).length,mt=monthTx(),inc=sum(mt,'in'),exp=sum(mt,'out');
+ const ms=S.goals.flatMap(g=>g.ms),hd=S.habits.filter(h=>h.log[today]).length;
+ return `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+ ${stat(t('net'),money(sum(S.tx,'in')-sum(S.tx,'out')),'var(--ac)')}${stat(t('earned'),money(inc),'var(--ok)')}${stat(t('spent'),money(exp),'var(--bad)')}${stat(t('habitsToday'),hd+'/'+S.habits.length)}</div>
+ <div class="grid md:grid-cols-2 gap-3 mt-3">
+ <section class="card p-4"><h2 class="font-semibold mb-3">${t('todayTasks')} <span class="mu num text-sm">${dn}/${td.length}</span></h2>${bar(pct(dn,td.length))}
+  <div class="mt-3">${td.map(taskRow).join('')||empty()}</div></section>
+ <section class="card p-4"><h2 class="font-semibold mb-3">${t('activeGoals')} <span class="mu num text-sm">${pct(ms.filter(m=>m.done).length,ms.length)}%</span></h2>
+  ${S.goals.map(g=>{const p=pct(g.ms.filter(m=>m.done).length,g.ms.length);return `<div class="mb-4"><div class="flex justify-between text-sm mb-1"><span>${nm(g)}</span><span class="num mu">${p}%</span></div>${bar(p)}</div>`}).join('')||empty()}</section></div>`},
+tasks(){
+ const groups=CATS.map(c=>{const l=S.tasks.filter(x=>x.cat===c);return l.length?`<section class="card mb-3"><h3 class="p-3 font-semibold border-b" style="border-color:var(--bd)">${t(c)} <span class="mu num text-sm">${l.filter(x=>x.done).length}/${l.length}</span></h3>${l.sort((a,b)=>a.done-b.done||Object.keys(PRI).indexOf(a.pri)-Object.keys(PRI).indexOf(b.pri)).map(taskRow).join('')}</section>`:''}).join('');
+ return `<div class="card p-3 mb-4 flex flex-wrap gap-2"><input id="nt" class="inp flex-1 min-w-[180px]" placeholder="${t('newTask')}">
+ <select id="nc" class="inp">${opts(CATS)}</select><select id="np" class="inp">${opts(['High','Medium','Low'])}</select><select id="ns" class="inp">${opts(['daily','weekly'])}</select>
+ <button class="btn" data-a="addtask">${t('add')}</button></div>${groups||empty()}`},
+goals(){
+ return `<div class="card p-3 mb-4 flex flex-wrap gap-2"><input id="ng" class="inp flex-1 min-w-[180px]" placeholder="${t('newGoal')}"><select id="gt" class="inp">${opts(['short','long'])}</select><button class="btn" data-a="addgoal">${t('add')}</button></div>
+ <div class="grid md:grid-cols-2 gap-3">${S.goals.map(g=>{const p=pct(g.ms.filter(m=>m.done).length,g.ms.length);return `<section class="card p-4">
+ <div class="flex justify-between items-start gap-2"><div><h3 class="font-semibold">${nm(g)}</h3><span class="text-xs mu">${t(g.type)}</span></div><div class="flex items-center gap-2"><span class="num font-bold" style="color:var(--ac)">${p}%</span><button class="mu" data-a="delgoal" data-id="${g.id}" aria-label="${t('del')}">✕</button></div></div>
+ <div class="my-3">${bar(p)}</div>
+ ${g.ms.map((m,i)=>`<button class="flex items-center gap-2 py-1 w-full text-start" data-a="tms" data-id="${g.id}" data-i="${i}"><span class="chk ${m.done?'on':''}">${m.done?'✓':''}</span><span class="${m.done?'line-through mu':''}">${nm(m)}</span></button>`).join('')}
+ <div class="flex gap-2 mt-3"><input class="inp flex-1" id="m${g.id}" placeholder="${t('newMs')}"><button class="ghost" data-a="addms" data-id="${g.id}">+</button></div></section>`}).join('')||empty()}</div>`},
+finance(){
+ const mt=monthTx(),inc=sum(mt,'in'),exp=sum(mt,'out'),bal=sum(S.tx,'in')-sum(S.tx,'out'),left=S.budget-exp;
+ const cats=FC.map(c=>({c,v:mt.filter(x=>x.type==='out'&&x.cat===c).reduce((s,x)=>s+x.amt,0)})),mx=Math.max(1,...cats.map(x=>x.v));
+ return `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${stat(t('net'),money(bal),'var(--ac)')}${stat(t('earned'),money(inc),'var(--ok)')}${stat(t('spent'),money(exp),'var(--bad)')}
+ ${stat(t('budget')+' · '+t(left>=0?'left':'over'),money(Math.abs(left)),left>=0?'var(--ok)':'var(--bad)')}</div>
+ <div class="card p-3 my-3 flex flex-wrap gap-2"><select id="fy" class="inp">${opts(['in','out'],k=>t(k==='in'?'income':'expense'))}</select>
+ <input id="fa" type="number" min="0" class="inp w-28 num" placeholder="${t('amount')}"><select id="fc" class="inp">${opts(FC)}</select>
+ <input id="fn" class="inp flex-1 min-w-[140px]" placeholder="${t('note')}"><button class="btn" data-a="addtx">${t('add')}</button></div>
+ <div class="grid md:grid-cols-2 gap-3"><section class="card p-4"><h3 class="font-semibold mb-3">${t('byCat')}</h3>${cats.map(x=>`<div class="mb-3"><div class="flex justify-between text-sm mb-1"><span>${t(x.c)}</span><span class="num mu">${money(x.v)}</span></div>${bar(pct(x.v,mx))}</div>`).join('')}</section>
+ <section class="card"><h3 class="font-semibold p-4 pb-2">${t('history')}</h3>${[...S.tx].reverse().map(x=>`<div class="flex items-center gap-3 px-4 py-2 border-t" style="border-color:var(--bd)"><div class="flex-1 min-w-0"><div class="truncate">${x.note||t(x.cat)}</div><div class="text-xs mu">${t(x.cat)} · <span class="num">${x.date}</span></div></div>
+ <span class="num font-semibold" style="color:${x.type==='in'?'var(--ok)':'var(--bad)'}">${x.type==='in'?'+':'-'}${money(x.amt)}</span><button class="mu" data-a="deltx" data-id="${x.id}" aria-label="${t('del')}">✕</button></div>`).join('')||empty()}</section></div>`},
+habits(){
+ const days=[...Array(7)].map((_,i)=>Date.now()-(6-i)*864e5);
+ return `<div class="card p-3 mb-4 flex gap-2"><input id="nh" class="inp flex-1" placeholder="${t('newHabit')}"><button class="btn" data-a="addhab">${t('add')}</button></div>
+ <section class="card overflow-x-auto"><table class="w-full text-sm"><thead><tr class="mu"><th class="p-3 text-start font-medium"></th>
+ ${days.map(d=>`<th class="p-2 font-medium num ${iso(d)===today?'':'mu'}" style="${iso(d)===today?'color:var(--ac)':''}">${new Date(d).toLocaleDateString(S.lang==='ar'?'ar-JO':'en-US',{weekday:'short'})}<br>${new Date(d).getDate()}</th>`).join('')}<th class="p-2 font-medium"></th></tr></thead>
+ <tbody>${S.habits.map(h=>`<tr class="border-t" style="border-color:var(--bd)"><td class="p-3 whitespace-nowrap">${nm(h)}</td>${days.map(d=>`<td class="p-2 text-center"><button class="chk mx-auto ${h.log[iso(d)]?'on':''}" data-a="thab" data-id="${h.id}" data-d="${iso(d)}" aria-label="${iso(d)}">${h.log[iso(d)]?'✓':''}</button></td>`).join('')}
+ <td class="p-2 whitespace-nowrap"><span class="num font-bold" style="color:var(--ac)">${streak(h)}</span> <span class="mu text-xs">${t('streak')}</span> <button class="mu px-1" data-a="delhab" data-id="${h.id}" aria-label="${t('del')}">✕</button></td></tr>`).join('')}</tbody></table>${S.habits.length?'':empty()}</section>`}
+};
+const NAV=['dashboard','tasks','goals','finance','habits'];
+function render(){
+ document.documentElement.lang=S.lang;document.documentElement.dir=S.lang==='ar'?'rtl':'ltr';
+ if(S.theme)document.documentElement.dataset.theme=S.theme;
+ $('#title').textContent=t('app');
+ $('#date').textContent=new Date().toLocaleDateString(S.lang==='ar'?'ar-JO':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+ $('#lng').textContent=t('lang');$('#thm').textContent=t(S.theme==='dark'?'light':'dark');
+ $('#nav').innerHTML=NAV.map(v=>`<button class="nav ${S.view===v?'on':''}" data-a="nav" data-id="${v}">${t(v)}</button>`).join('');
+ $('#app').innerHTML=V[S.view]();
+}
+const val=id=>($('#'+id)||{}).value||'';
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=b.dataset.id;
+ const A={
+  nav:()=>S.view=id,
+  tog:()=>{const x=S.tasks.find(x=>x.id===id);x.done=!x.done},
+  deltask:()=>S.tasks=S.tasks.filter(x=>x.id!==id),
+  addtask:()=>{const s=val('nt').trim();if(!s)return $('#nt').focus();S.tasks.push({id:uid(),t:s,cat:val('nc'),pri:val('np'),scope:val('ns'),done:false})},
+  addgoal:()=>{const s=val('ng').trim();if(!s)return $('#ng').focus();S.goals.push({id:uid(),t:s,type:val('gt'),ms:[]})},
+  delgoal:()=>S.goals=S.goals.filter(x=>x.id!==id),
+  tms:()=>{const m=S.goals.find(x=>x.id===id).ms[+b.dataset.i];m.done=!m.done},
+  addms:()=>{const s=val('m'+id).trim();if(!s)return;S.goals.find(x=>x.id===id).ms.push({t:s,done:false})},
+  addtx:()=>{const n=parseFloat(val('fa'));if(!(n>0))return $('#fa').focus();S.tx.push({id:uid(),type:val('fy'),amt:n,cat:val('fc'),note:val('fn').trim(),date:today})},
+  deltx:()=>S.tx=S.tx.filter(x=>x.id!==id),
+  addhab:()=>{const s=val('nh').trim();if(!s)return $('#nh').focus();S.habits.push({id:uid(),t:s,log:{}})},
+  delhab:()=>S.habits=S.habits.filter(x=>x.id!==id),
+  thab:()=>{const h=S.habits.find(x=>x.id===id),d=b.dataset.d;h.log[d]?delete h.log[d]:h.log[d]=1}
+ };
+ if(A[a]){A[a]();save();render()}
+});
+$('#lng').onclick=()=>{S.lang=S.lang==='ar'?'en':'ar';save();render()};
+$('#thm').onclick=()=>{S.theme=S.theme==='dark'?'light':'dark';save();render()};
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('input')){const btn=e.target.parentElement.querySelector('.btn,.ghost[data-a]');if(btn)btn.click()}});
+render();
+</script>
+</body>
+</html>
