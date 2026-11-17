@@ -65,7 +65,7 @@ const seed=()=>({lang:'en',theme:'dark',view:'dashboard',budget:1500,
  goals:[
   {id:uid(),t:'Launch MVP',a:'إطلاق النسخة الأولى',type:'short',ms:[['Design done','اكتمال التصميم',1],['Backend API','واجهة الخلفية',1],['Beta users','مستخدمو التجربة',0],['Public launch','الإطلاق العام',0]].map(m=>({t:m[0],a:m[1],done:!!m[2]}))},
   {id:uid(),t:'Reach $5k monthly revenue',a:'الوصول إلى 5 آلاف دولار شهرياً',type:'long',ms:[['First 10 customers','أول 10 عملاء',1],['$1k MRR','1000$ شهرياً',0],['$3k MRR','3000$ شهرياً',0],['$5k MRR','5000$ شهرياً',0]].map(m=>({t:m[0],a:m[1],done:!!m[2]}))}],
- tx:[{id:uid(),type:'in',amt:2400,cat:'revenue',note:'Client project',date:today},{id:uid(),type:'out',amt:49,cat:'subs',note:'Cloud & tooling',date:today},
+ tx:[{id:uid(),type:'in',amt:0,cat:'revenue',note:'Client project',date:today},{id:uid(),type:'out',amt:49,cat:'subs',note:'Cloud & tooling',date:today},
   {id:uid(),type:'out',amt:210,cat:'ops',note:'Hosting & domains',date:today},{id:uid(),type:'out',amt:120,cat:'personal',note:'Gym membership',date:today}],
  habits:[{id:uid(),t:'Gym workout',a:'تمرين النادي',log:{}},{id:uid(),t:'Deep work (4h)',a:'عمل عميق (4 ساعات)',log:{}},{id:uid(),t:'Read 20 pages',a:'قراءة 20 صفحة',log:{}}]});
 let S; try{S=JSON.parse(localStorage.getItem('cc1'))}catch(e){} if(!S||!S.tasks)S=seed();
